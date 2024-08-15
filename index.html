@@ -156,15 +156,6 @@
     </style>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
     <script>
-        function formatPercentage(input) {
-            if (input.value !== "" && !input.value.includes("%")) {
-                let value = parseFloat(input.value);
-                if (!isNaN(value)) {
-                    input.value = value + "%";
-                }
-            }
-        }
-
         function clearAllInputs() {
             document.querySelectorAll('input').forEach(input => {
                 input.value = '';
@@ -233,21 +224,6 @@
             };
             html2pdf().from(element).set(opt).save();
         }
-
-        document.addEventListener('DOMContentLoaded', function() {
-            document.querySelectorAll('input[type="number"], input[type="text"]').forEach((input) => {
-                input.addEventListener('blur', function() {
-                    formatPercentage(input); 
-                });
-
-                input.addEventListener('keypress', function(event) {
-                    if (event.key === 'Enter') {
-                        event.preventDefault(); 
-                        input.blur();
-                    }
-                });
-            });
-        });
     </script>
 </head>
 
@@ -257,7 +233,7 @@
         <h1>Relatório de Harmonização</h1>
         <h2>Radiestesia Terapêutica</h2>
 
-        <p><strong>Prontuário:</strong> <input type="text" id="nome" placeholder="Digite o número do prontuário" aria-label="Nome"></p>
+        <p><strong>Prontuário:</strong> <input type="number" id="prontuario" placeholder="Digite o número do prontuário" aria-label="Prontuário"></p>
         <p><strong>Nome:</strong> <input type="text" id="nome" placeholder="Digite o nome" aria-label="Nome"></p>        
         <p><strong>Data de nascimento:</strong> <input type="date" id="data_nascimento" aria-label="Data de nascimento"></p>
         <p><strong>Data da consulta:</strong> <input type="date" id="data_consulta" aria-label="Data da consulta"></p>
@@ -491,10 +467,10 @@
 
         <div class="button-container">
             <button onclick="generatePDF()">Gerar Relatório</button>
-            <button onclick="clearAllInputs()">Limpar Dados</button>
-            <button onclick="exportData()">Exportar Dados</button>
+            <button onclick="exportData()">Exportar Dados</button>         
             <input type="file" id="importFile" style="display:none" onchange="importData(event)">
             <button onclick="document.getElementById('importFile').click()">Importar Dados</button>
+            <button onclick="clearAllInputs()">Limpar Dados</button>
         </div>
 
         <footer>
