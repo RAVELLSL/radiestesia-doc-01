@@ -1,0 +1,506 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Relatório de Radiestesia Terapêutica</title>
+    <link href="https://fonts.googleapis.com/css2?family=Lato:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Lato', sans-serif;
+            margin: 20px;
+            line-height: 1.6;
+            background-color: #f4f4f4;
+            font-size: 16px;
+        }
+
+        h1, h2, h3 {
+            text-align: center;
+            color: #2E8B57;
+        }
+
+        h3 {
+            margin-top: 30px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            background-color: #ffffff;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        table, th, td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 12px;
+            font-size: 14px;
+        }
+
+        th {
+            background-color: #2E8B57;
+            color: white;
+            text-align: center;
+        }
+
+        input[type="text"], input[type="date"], input[type="number"] {
+            width: 100%;
+            padding: 8px;
+            box-sizing: border-box;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+
+        input[type="text"]:focus, input[type="date"]:focus, input[type="number"]:focus {
+            border-color: #2E8B57;
+            outline: none;
+        }
+
+        .section-title {
+            margin-top: 40px;
+            font-size: 1.5em;
+            color: #4682B4;
+            border-bottom: 2px solid #2E8B57;
+            padding-bottom: 10px;
+        }
+
+        .comment {
+            color: #555;
+            font-style: italic;
+        }
+
+        footer {
+            text-align: center;
+            margin-top: 40px;
+            color: #888;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 10px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin-top: 20px;
+            margin-bottom: 40px;
+        }
+
+        .button-container button {
+            background-color: #2E8B57;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+
+        .button-container button:hover {
+            background-color: #246646;
+        }
+
+        @media only screen and (max-width: 600px) {
+            body {
+                font-size: 14px;
+            }
+
+            table, th, td {
+                font-size: 12px;
+            }
+
+            h1 {
+                font-size: 24px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+
+            h3 {
+                font-size: 18px;
+            }
+
+            .button-container button {
+                width: 100%;
+                margin: 10px 0;
+            }
+        }
+
+        /* Estilo para evitar quebras de página */
+        .page-break {
+            page-break-after: always;
+        }
+
+        table {
+            page-break-inside: avoid;
+        }
+
+        tr {
+            page-break-inside: avoid;
+            page-break-after: auto;
+        }
+
+        thead {
+            display: table-header-group;
+        }
+
+        tfoot {
+            display: table-footer-group;
+        }
+    </style>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.9.2/html2pdf.bundle.min.js"></script>
+    <script>
+        function formatPercentage(input) {
+            if (input.value !== "" && !input.value.includes("%")) {
+                let value = parseFloat(input.value);
+                if (!isNaN(value)) {
+                    input.value = value + "%";
+                }
+            }
+        }
+
+        function clearAllInputs() {
+            document.querySelectorAll('input').forEach(input => {
+                input.value = '';
+                if (input.type === 'radio') {
+                    input.checked = false;
+                }
+            });
+            localStorage.clear();
+        }
+
+        function exportData() {
+            const fileName = prompt("Por favor, insira o nome do arquivo:", "dados_radiestesia");
+            if (!fileName) return;
+
+            const data = {};
+            document.querySelectorAll('input').forEach((input) => {
+                if (input.type === 'radio') {
+                    if (input.checked) {
+                        data[input.id] = input.value;
+                    }
+                } else {
+                    data[input.id] = input.value;
+                }
+            });
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], {type: "application/json"});
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement("a");
+            a.href = url;
+            a.download = `${fileName}.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const data = JSON.parse(event.target.result);
+
+                Object.keys(data).forEach(key => {
+                    const input = document.getElementById(key);
+                    if (input) {
+                        if (input.type === 'radio') {
+                            document.querySelector(`input[name="${input.name}"][value="${data[key]}"]`).checked = true;
+                        } else {
+                            input.value = data[key];
+                        }
+                    }
+                });
+            };
+            reader.readAsText(file);
+        }
+
+        function generatePDF() {
+            const element = document.querySelector(".container");
+            const opt = {
+                margin: 0.5,
+                filename: 'relatorio_radiestesia.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' },
+                pagebreak: { mode: ['avoid-all', 'css', 'legacy'] }
+            };
+            html2pdf().from(element).set(opt).save();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('input[type="number"], input[type="text"]').forEach((input) => {
+                input.addEventListener('blur', function() {
+                    formatPercentage(input); 
+                });
+
+                input.addEventListener('keypress', function(event) {
+                    if (event.key === 'Enter') {
+                        event.preventDefault(); 
+                        input.blur();
+                    }
+                });
+            });
+        });
+    </script>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Relatório de Harmonização</h1>
+        <h2>Radiestesia Terapêutica</h2>
+
+        <p><strong>Nome:</strong> <input type="text" id="nome" placeholder="Digite o nome" aria-label="Nome"></p>
+        <p><strong>Data de nascimento:</strong> <input type="date" id="data_nascimento" aria-label="Data de nascimento"></p>
+        <p><strong>Data da consulta:</strong> <input type="date" id="data_consulta" aria-label="Data da consulta"></p>
+
+        <h3>FASE 1 – AFERIÇÃO ENERGÉTICA</h3>
+
+        <div class="section-title">Etapa 1 – Campos Energéticos:</div>
+        <p>Trata-se do acesso aos campos eletromagnéticos possibilitando a medição energética dos campos mental, emocional, espiritual e físico.</p>
+        
+        <table>
+            <tr>
+                <th>Campo/Corpo</th>
+                <th>Mental</th>
+                <th>Emocional</th>
+                <th>Espiritual</th>
+                <th>Físico</th>
+            </tr>
+            <tr>
+                <td>Tem desequilíbrio?</td>
+                <td><input type="text" id="desequilibrio_mental_1" class="desequilibrio_mental" placeholder="Sim/Não" aria-label="Desequilíbrio Mental"></td>
+                <td><input type="text" id="desequilibrio_emocional_1" class="desequilibrio_mental" placeholder="Sim/Não" aria-label="Desequilíbrio Emocional"></td>
+                <td><input type="text" id="desequilibrio_espiritual_1" class="desequilibrio_mental" placeholder="Sim/Não" aria-label="Desequilíbrio Espiritual"></td>
+                <td><input type="text" id="desequilibrio_fisico_1" class="desequilibrio_mental" placeholder="Sim/Não" aria-label="Desequilíbrio Físico"></td>
+            </tr>
+            <tr>
+                <td>Qual a % do desequilíbrio?</td>
+                <td><input type="text" id="percentual_desequilibrio_mental_1" class="percentual_desequilibrio_mental" placeholder="0%" aria-label="Percentual de Desequilíbrio Mental"></td>
+                <td><input type="text" id="percentual_desequilibrio_emocional_1" class="percentual_desequilibrio_mental" placeholder="0%" aria-label="Percentual de Desequilíbrio Emocional"></td>
+                <td><input type="text" id="percentual_desequilibrio_espiritual_1" class="percentual_desequilibrio_mental" placeholder="0%" aria-label="Percentual de Desequilíbrio Espiritual"></td>
+                <td><input type="text" id="percentual_desequilibrio_fisico_1" class="percentual_desequilibrio_mental" placeholder="0%" aria-label="Percentual de Desequilíbrio Físico"></td>
+            </tr>
+            <tr>
+                <td>Chakra(s) afetado(s)</td>
+                <td colspan="4"><input type="text" id="chakras_afetados" placeholder="Digite o(s) chakra(s) afetado(s)" aria-label="Chakras afetados"></td>
+            </tr>
+        </table>
+
+        <div class="section-title">Etapa 2 – Chakras Superiores:</div>
+        <p>Trata-se da medição energética de cada um dos 7 principais chakras e glândulas correspondentes.</p>
+        
+        <table>
+            <tr>
+                <th>Chakra</th>
+                <th>Coronário</th>
+                <th>Frontal</th>
+                <th>Laríngeo</th>
+                <th>Cardíaco</th>
+            </tr>
+            <tr>
+                <td>Tem desequilíbrio?</td>
+                <td><input type="text" id="desequilibrio_coronario" class="desequilibrio_chakra_superior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Coronário"></td>
+                <td><input type="text" id="desequilibrio_frontal" class="desequilibrio_chakra_superior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Frontal"></td>
+                <td><input type="text" id="desequilibrio_laringeo" class="desequilibrio_chakra_superior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Laríngeo"></td>
+                <td><input type="text" id="desequilibrio_cardiaco" class="desequilibrio_chakra_superior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Cardíaco"></td>
+            </tr>
+            <tr>
+                <td>Qual a % do desequilíbrio?</td>
+                <td><input type="text" id="percentual_desequilibrio_coronario" class="percentual_desequilibrio_chakra_superior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Coronário"></td>
+                <td><input type="text" id="percentual_desequilibrio_frontal" class="percentual_desequilibrio_chakra_superior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Frontal"></td>
+                <td><input type="text" id="percentual_desequilibrio_laringeo" class="percentual_desequilibrio_chakra_superior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Laríngeo"></td>
+                <td><input type="text" id="percentual_desequilibrio_cardiaco" class="percentual_desequilibrio_chakra_superior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Cardíaco"></td>
+            </tr>
+            <tr>
+                <td>Qual a atividade do chakra?</td>
+                <td><input type="text" id="atividade_coronario" class="atividade_chakra_superior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Coronário"></td>
+                <td><input type="text" id="atividade_frontal" class="atividade_chakra_superior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Frontal"></td>
+                <td><input type="text" id="atividade_laringeo" class="atividade_chakra_superior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Laríngeo"></td>
+                <td><input type="text" id="atividade_cardiaco" class="atividade_chakra_superior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Cardíaco"></td>
+            </tr>
+            <tr>
+                <td>Afeta glândula/órgão correspondente?</td>
+                <td><input type="text" id="afeta_coronario" class="afeta_glandula" placeholder="Sim/Não" aria-label="Afeta Glandula Coronário"></td>
+                <td><input type="text" id="afeta_frontal" class="afeta_glandula" placeholder="Sim/Não" aria-label="Afeta Glandula Frontal"></td>
+                <td><input type="text" id="afeta_laringeo" class="afeta_glandula" placeholder="Sim/Não" aria-label="Afeta Glandula Laríngeo"></td>
+                <td><input type="text" id="afeta_cardiaco" class="afeta_glandula" placeholder="Sim/Não" aria-label="Afeta Glandula Cardíaco"></td>
+            </tr>
+        </table>
+
+        <h3>Chakras Inferiores:</h3>
+        <table>
+            <tr>
+                <th>Chakra</th>
+                <th>Plexo Solar</th>
+                <th>Sacro</th>
+                <th>Básico</th>
+            </tr>
+            <tr>
+                <td>Tem desequilíbrio?</td>
+                <td><input type="text" id="desequilibrio_plexo_solar" class="desequilibrio_chakra_inferior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Plexo Solar"></td>
+                <td><input type="text" id="desequilibrio_sacro" class="desequilibrio_chakra_inferior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Sacro"></td>
+                <td><input type="text" id="desequilibrio_basico" class="desequilibrio_chakra_inferior" placeholder="Sim/Não" aria-label="Desequilíbrio Chakra Básico"></td>
+            </tr>
+            <tr>
+                <td>Qual a % do desequilíbrio?</td>
+                <td><input type="text" id="percentual_desequilibrio_plexo_solar" class="percentual_desequilibrio_chakra_inferior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Plexo Solar"></td>
+                <td><input type="text" id="percentual_desequilibrio_sacro" class="percentual_desequilibrio_chakra_inferior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Sacro"></td>
+                <td><input type="text" id="percentual_desequilibrio_basico" class="percentual_desequilibrio_chakra_inferior" placeholder="0%" aria-label="Percentual de Desequilíbrio Chakra Básico"></td>
+            </tr>
+            <tr>
+                <td>Qual a atividade do chakra?</td>
+                <td><input type="text" id="atividade_plexo_solar" class="atividade_chakra_inferior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Plexo Solar"></td>
+                <td><input type="text" id="atividade_sacro" class="atividade_chakra_inferior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Sacro"></td>
+                <td><input type="text" id="atividade_basico" class="atividade_chakra_inferior" placeholder="Ativo/Inativo" aria-label="Atividade Chakra Básico"></td>
+            </tr>
+            <tr>
+                <td>Afeta glândula/órgão correspondente?</td>
+                <td><input type="text" id="afeta_plexo_solar" class="afeta_glandula_inferior" placeholder="Sim/Não" aria-label="Afeta Glandula Plexo Solar"></td>
+                <td><input type="text" id="afeta_sacro" class="afeta_glandula_inferior" placeholder="Sim/Não" aria-label="Afeta Glandula Sacro"></td>
+                <td><input type="text" id="afeta_basico" class="afeta_glandula_inferior" placeholder="Sim/Não" aria-label="Afeta Glandula Básico"></td>
+            </tr>
+        </table>
+
+        <div class="section-title">Etapa 3 – Campo áurico:</div>
+        <p>Trata-se do acesso ao campo áurico possibilitando a medição energética da aura, das cores do campo e da saúde.</p>
+        
+        <table>
+            <tr>
+                <th></th>
+                <th>Aberto</th>
+                <th>Média</th>
+                <th>Fechado</th>
+                <th>Comentários</th>
+            </tr>
+            <tr>
+                <td>Campo áurico</td>
+                <td><input type="text" id="campo_aurico_aberto_1" class="campo_aurico_aberto" placeholder="Sim/Não" aria-label="Campo Áurico Aberto"></td>
+                <td><input type="text" id="campo_aurico_media_1" class="campo_aurico_aberto" placeholder="Sim/Não" aria-label="Campo Áurico Média"></td>
+                <td><input type="text" id="campo_aurico_fechado_1" class="campo_aurico_aberto" placeholder="Sim/Não" aria-label="Campo Áurico Fechado"></td>
+                <td><input type="text" id="comentarios_aurico_1" placeholder="Comentários" aria-label="Comentários"></td>
+            </tr>
+            <tr>
+                <th></th>
+                <th>Expandido</th>
+                <th>Média</th>
+                <th>Encolhido</th>
+                <th>Comentários</th>
+            </tr>
+            <tr>
+                <td>Campo áurico</td>
+                <td><input type="text" id="campo_aurico_expandido_1" class="campo_aurico_expandido" placeholder="Sim/Não" aria-label="Campo Áurico Expandido"></td>
+                <td><input type="text" id="campo_aurico_media_2" class="campo_aurico_expandido" placeholder="Sim/Não" aria-label="Campo Áurico Média"></td>
+                <td><input type="text" id="campo_aurico_encolhido_1" class="campo_aurico_expandido" placeholder="Sim/Não" aria-label="Campo Áurico Encolhido"></td>
+                <td><input type="text" id="comentarios_aurico_2" placeholder="Comentários" aria-label="Comentários"></td>
+            </tr>
+            <tr>
+                <td>Cor em falta</td>
+                <td colspan="4"><input type="text" id="cor_falta" placeholder="Digite a cor em falta" aria-label="Cor em Falta"></td>
+            </tr>
+            <tr>
+                <td>Cor em excesso</td>
+                <td colspan="4"><input type="text" id="cor_excesso" placeholder="Digite a cor em excesso" aria-label="Cor em Excesso"></td>
+            </tr>
+            <tr>
+                <td>Energia de saúde</td>
+                <td colspan="4"><input type="text" id="energia_saude" placeholder="Digite a energia de saúde" aria-label="Energia de Saúde"></td>
+            </tr>
+        </table>
+
+        <div class="section-title">ANÁLISE BÔNUS – Etapa 4 - Áreas da vida:</div>
+        <p>Trata-se da medição energética das principais áreas da vida para se detectar quais afetam e causam as desarmonias mensuradas.</p>
+        <p class="comment">A harmonização de qualquer uma das áreas da vida é feita à parte.</p>
+        
+        <table>
+            <tr>
+                <th>Área da vida</th>
+                <th>Péssimo</th>
+                <th>Muito mau</th>
+                <th>Mau</th>
+                <th>Regular</th>
+                <th>Bom</th>
+                <th>Muito bom</th>
+                <th>Excelente</th>
+                <th>OBS</th>
+            </tr>
+            <tr class="area_vida">
+                <td>Familiar</td>
+                <td><input type="radio" id="familiar_pessimo" name="familiar" value="Péssimo"></td>
+                <td><input type="radio" id="familiar_muito_mau" name="familiar" value="Muito mau"></td>
+                <td><input type="radio" id="familiar_mau" name="familiar" value="Mau"></td>
+                <td><input type="radio" id="familiar_regular" name="familiar" value="Regular"></td>
+                <td><input type="radio" id="familiar_bom" name="familiar" value="Bom"></td>
+                <td><input type="radio" id="familiar_muito_bom" name="familiar" value="Muito bom"></td>
+                <td><input type="radio" id="familiar_excelente" name="familiar" value="Excelente"></td>
+                <td><input type="text" id="familiar_obs" placeholder="Comentários"></td>
+            </tr>
+            <tr class="area_vida">
+                <td>Relacionamentos afetivos</td>
+                <td><input type="radio" id="afetivos_pessimo" name="afetivos" value="Péssimo"></td>
+                <td><input type="radio" id="afetivos_muito_mau" name="afetivos" value="Muito mau"></td>
+                <td><input type="radio" id="afetivos_mau" name="afetivos" value="Mau"></td>
+                <td><input type="radio" id="afetivos_regular" name="afetivos" value="Regular"></td>
+                <td><input type="radio" id="afetivos_bom" name="afetivos" value="Bom"></td>
+                <td><input type="radio" id="afetivos_muito_bom" name="afetivos" value="Muito bom"></td>
+                <td><input type="radio" id="afetivos_excelente" name="afetivos" value="Excelente"></td>
+                <td><input type="text" id="afetivos_obs" placeholder="Comentários"></td>
+            </tr>
+            <tr class="area_vida">
+                <td>Profissional</td>
+                <td><input type="radio" id="profissional_pessimo" name="profissional" value="Péssimo"></td>
+                <td><input type="radio" id="profissional_muito_mau" name="profissional" value="Muito mau"></td>
+                <td><input type="radio" id="profissional_mau" name="profissional" value="Mau"></td>
+                <td><input type="radio" id="profissional_regular" name="profissional" value="Regular"></td>
+                <td><input type="radio" id="profissional_bom" name="profissional" value="Bom"></td>
+                <td><input type="radio" id="profissional_muito_bom" name="profissional" value="Muito bom"></td>
+                <td><input type="radio" id="profissional_excelente" name="profissional" value="Excelente"></td>
+                <td><input type="text" id="profissional_obs" placeholder="Comentários"></td>
+            </tr>
+            <tr class="area_vida">
+                <td>Financeiro</td>
+                <td><input type="radio" id="financeiro_pessimo" name="financeiro" value="Péssimo"></td>
+                <td><input type="radio" id="financeiro_muito_mau" name="financeiro" value="Muito mau"></td>
+                <td><input type="radio" id="financeiro_mau" name="financeiro" value="Mau"></td>
+                <td><input type="radio" id="financeiro_regular" name="financeiro" value="Regular"></td>
+                <td><input type="radio" id="financeiro_bom" name="financeiro" value="Bom"></td>
+                <td><input type="radio" id="financeiro_muito_bom" name="financeiro" value="Muito bom"></td>
+                <td><input type="radio" id="financeiro_excelente" name="financeiro" value="Excelente"></td>
+                <td><input type="text" id="financeiro_obs" placeholder="Comentários"></td>
+            </tr>
+            <tr class="area_vida">
+                <td>Missão de vida</td>
+                <td><input type="radio" id="missao_pessimo" name="missao" value="Péssimo"></td>
+                <td><input type="radio" id="missao_muito_mau" name="missao" value="Muito mau"></td>
+                <td><input type="radio" id="missao_mau" name="missao" value="Mau"></td>
+                <td><input type="radio" id="missao_regular" name="missao" value="Regular"></td>
+                <td><input type="radio" id="missao_bom" name="missao" value="Bom"></td>
+                <td><input type="radio" id="missao_muito_bom" name="missao" value="Muito bom"></td>
+                <td><input type="radio" id="missao_excelente" name="missao" value="Excelente"></td>
+                <td><input type="text" id="missao_obs" placeholder="Comentários"></td>
+            </tr>
+        </table>
+
+        <div class="button-container">
+            <button onclick="generatePDF()">Gerar Relatório</button>
+            <button onclick="clearAllInputs()">Limpar Dados</button>
+            <button onclick="exportData()">Exportar Dados</button>
+            <input type="file" id="importFile" style="display:none" onchange="importData(event)">
+            <button onclick="document.getElementById('importFile').click()">Importar Dados</button>
+        </div>
+
+        <footer>
+            <p>Relatório de Harmonização – Radiestesia Terapêutica</p>
+        </footer>
+    </div>
+
+</body>
+
+</html>
